@@ -24,8 +24,11 @@ d'abord.
   dues, temps moyen, séries de jours, historique détaillé des sessions.
 - **Fiches de cours** pour les généralités et la signalisation, rédigées à
   partir des définitions du chapitre I.
-- **PWA** : manifeste, icônes et service worker pour un usage hors ligne après
-  une première visite.
+- **Application installable (PWA)** : manifeste complet, icônes, captures
+  d'écran et service worker généré à la compilation. Toutes les pages, les
+  919 questions et les 233 illustrations sont précachées : après la première
+  visite, l'application fonctionne entièrement hors connexion et s'installe
+  sur l'écran d'accueil.
 
 ## Stack
 
@@ -58,8 +61,30 @@ Ou avec n'importe quel serveur de fichiers :
 cd out && python3 -m http.server 4173
 ```
 
-Le service worker ne s'enregistre qu'en production. Un premier chargement en
-ligne est nécessaire pour mettre les pages en cache.
+La compilation lance ensuite `scripts/build-sw.mjs`, qui parcourt le dossier
+`out/`, calcule une empreinte du contenu et écrit un service worker avec la
+liste complète des ressources à précacher (environ 3,2 Mo). Il ne faut donc pas
+modifier `out/sw.js` à la main : il est régénéré à chaque build.
+
+## Installer l'application et l'utiliser hors connexion
+
+Le service worker ne s'enregistre qu'en production et nécessite HTTPS ou
+`localhost`. Après un premier chargement en ligne :
+
+1. **Chrome, Edge, Android** : bouton « Installer » dans l'application, ou menu
+   du navigateur → « Installer l'application ».
+2. **Safari (iPhone, iPad)** : bouton Partager → « Sur l'écran d'accueil ».
+3. **Firefox mobile** : menu → « Ajouter à l'écran d'accueil ».
+
+L'application s'ouvre alors en plein écran, sans barre d'adresse. Toutes les
+pages, illustrations et ressources sont servies depuis le cache ; la
+progression reste enregistrée sur l'appareil. Quand une nouvelle version est
+compilée, elle est téléchargée en arrière-plan et l'application propose de
+recharger. L'ancien cache est supprimé automatiquement.
+
+Le bouton d'installation n'apparaît que lorsque le navigateur le permet. Sur
+les navigateurs qui ne prennent pas en charge l'installation, l'écran Réglages
+affiche la marche à suivre.
 
 ## Tests et vérifications
 
@@ -98,10 +123,12 @@ src/
                   formatage et sons
 public/
   questions/      illustrations WebP
-  icons/          icônes PWA
-  sw.js           service worker
+  icons/          icônes PWA (dont icône Apple)
+  screenshots/    captures affichées dans l'invite d'installation
+  manifest.webmanifest
 scripts/
   extract.py      extraction du PDF
+  build-sw.mjs    génération du service worker après le build
   report.json     rapport de la dernière extraction
 ```
 
@@ -109,6 +136,9 @@ scripts/
 
 - La progression est limitée à cet appareil et à ce navigateur. Les réglages
   permettent d'exporter et d'importer une sauvegarde JSON.
+- Le mode hors ligne s'active après la première visite complète. Tant que le
+  précache n'est pas terminé, l'application fonctionne normalement en ligne et
+  signale l'état hors connexion dans l'interface.
 - Les questions à réponses multiples se valident explicitement ; les questions
   à réponse unique sont validées dès la sélection.
 - Le score de préparation suit la formule :
