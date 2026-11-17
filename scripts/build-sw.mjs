@@ -113,12 +113,16 @@ function offlinePage() {
 
 async function respond(request) {
   const cached = await caches.match(request, { ignoreSearch: true });
+  const url = new URL(request.url);
 
   const network = fetch(request)
     .then(async (response) => {
       if (response && response.ok) {
         const copy = response.clone();
-        caches.open(CACHE).then((cache) => cache.put(request, copy)).catch(() => undefined);
+        // Les pages statiques ne dépendent pas de la requête : on range la
+        // réponse sous l'URL sans paramètres pour éviter les doublons.
+        const key = new Request(url.origin + url.pathname);
+        caches.open(CACHE).then((cache) => cache.put(key, copy)).catch(() => undefined);
       }
       return response;
     });

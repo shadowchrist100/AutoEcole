@@ -5,6 +5,7 @@ import {
   ArrowRight,
   ChartNoAxesColumn,
   ChevronRight,
+  Download,
   Flame,
   Play,
   Repeat2,
@@ -16,6 +17,7 @@ import { moduleStats, globalStats, readiness, readinessLabel, dailySeries, sessi
 import { useProgress } from "@/lib/progress";
 import { meta, modules, quizModules } from "@/lib/content";
 import { ModuleIcon, ProgressBar, Ring, StatTile } from "@/components/ui";
+import { usePwa } from "@/components/Pwa";
 import { formatPercent, modeLabel, plural } from "@/lib/format";
 
 const MODE_HREF: Record<string, string> = {
@@ -28,6 +30,7 @@ const MODE_HREF: Record<string, string> = {
 
 export default function DashboardPage() {
   const { state, ready, lastSession } = useProgress();
+  const { canInstall, install } = usePwa();
   const stats = globalStats(state);
   const score = readiness(stats);
   const status = readinessLabel(score);
@@ -122,6 +125,24 @@ export default function DashboardPage() {
           </div>
         </div>
       </section>
+
+      {canInstall ? (
+        <section className="flex flex-wrap items-center gap-3 rounded-2xl border border-brand/20 bg-brand-soft px-4 py-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand text-white">
+            <Download size={18} aria-hidden />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-extrabold">Installez AutoÉcole</p>
+            <p className="mt-0.5 text-xs text-ink/70">
+              Un accès direct depuis l'écran d'accueil, et toutes les questions disponibles hors connexion.
+            </p>
+          </div>
+          <button type="button" onClick={() => void install()} className="btn-brand">
+            <Download size={15} aria-hidden />
+            Installer
+          </button>
+        </section>
+      ) : null}
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile

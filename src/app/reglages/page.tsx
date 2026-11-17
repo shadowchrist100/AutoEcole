@@ -11,11 +11,14 @@ import {
   Info,
   RefreshCw,
   Settings2,
+  Share,
+  Smartphone,
   Timer,
   Trash2,
   Upload,
   Volume2,
   VolumeX,
+  WifiOff,
 } from "lucide-react";
 import Link from "next/link";
 import { useProgress } from "@/lib/progress";
@@ -23,6 +26,7 @@ import { meta } from "@/lib/content";
 import { globalStats } from "@/lib/stats";
 import { BOX_INTERVALS_DAYS } from "@/lib/srs";
 import { Divider } from "@/components/ui";
+import { usePwa } from "@/components/Pwa";
 
 function Toggle({
   checked,
@@ -68,6 +72,7 @@ function Toggle({
 
 export default function ReglagesPage() {
   const { state, ready, updateSettings, reset, exportData, importData } = useProgress();
+  const { canInstall, installed, ios, offline, install } = usePwa();
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -92,6 +97,119 @@ export default function ReglagesPage() {
           reste sur cet appareil.
         </p>
       </div>
+
+      <section className="card overflow-hidden">
+        <div className="relative overflow-hidden bg-ink px-5 py-6 text-white sm:px-6">
+          <div
+            className="pointer-events-none absolute -right-16 -top-20 h-52 w-52 rounded-full bg-yellow/15 blur-2xl"
+            aria-hidden
+          />
+          <div className="relative flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40">Application</p>
+              <h2 className="mt-1 text-lg font-extrabold tracking-tight">Installer et travailler hors ligne</h2>
+              <p className="mt-1.5 max-w-xl text-xs leading-relaxed text-white/60">
+                Les pages, les {meta.questionCount} questions et leurs illustrations sont enregistrées sur
+                l'appareil après la première visite. Ensuite, tout fonctionne sans connexion.
+              </p>
+            </div>
+            <span
+              className={`shrink-0 ${
+                installed
+                  ? "chip-good"
+                  : offline
+                    ? "chip-yellow"
+                    : "rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-white/70"
+              }`}
+            >
+              {installed ? "Installée" : canInstall ? "Prête à installer" : offline ? "Hors ligne" : "Navigateur"}
+            </span>
+          </div>
+        </div>
+
+        <div className="p-5 sm:p-6">
+          {installed ? (
+            <div className="flex items-start gap-3 rounded-2xl bg-good-soft px-4 py-3.5">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-good text-white">
+                <Check size={18} aria-hidden />
+              </span>
+              <div>
+                <p className="text-sm font-extrabold text-good">L'application est installée</p>
+                <p className="mt-0.5 text-xs text-ink/70">
+                  Lancez-la depuis votre écran d'accueil ou le menu des applications. Elle s'ouvre sans barre
+                  d'adresse et conserve votre progression.
+                </p>
+              </div>
+            </div>
+          ) : canInstall ? (
+            <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-brand-soft px-4 py-3.5">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand text-white">
+                <Download size={19} aria-hidden />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-extrabold">Ajoutez AutoÉcole à votre écran d'accueil</p>
+                <p className="mt-0.5 text-xs text-ink/70">
+                  Un raccourci comme une application, sans passer par le navigateur.
+                </p>
+              </div>
+              <button type="button" onClick={() => void install()} className="btn-brand w-full sm:w-auto">
+                <Download size={16} aria-hidden />
+                Installer
+              </button>
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-canvas px-4 py-3.5">
+              <p className="flex items-center gap-2 text-sm font-extrabold">
+                <Smartphone size={16} className="text-brand" aria-hidden />
+                Ajouter à l'écran d'accueil
+              </p>
+              {ios ? (
+                <ol className="mt-2 space-y-1 text-xs leading-relaxed text-muted">
+                  <li>
+                    1. Ouvrez le bouton <Share size={12} className="inline" aria-hidden /> Partager dans Safari.
+                  </li>
+                  <li>2. Choisissez « Sur l'écran d'accueil ».</li>
+                  <li>3. Ouvrez AutoÉcole depuis l'icône ajoutée.</li>
+                </ol>
+              ) : (
+                <p className="mt-1 text-xs leading-relaxed text-muted">
+                  Dans le menu du navigateur, choisissez « Installer l'application » (Chrome, Edge) ou
+                  « Ajouter à l'écran d'accueil » (Safari, Firefox mobile). L'application s'ouvre ensuite en
+                  plein écran.
+                </p>
+              )}
+            </div>
+          )}
+
+          <div className="mt-4 grid gap-2.5 sm:grid-cols-3">
+            {[
+              {
+                icon: <WifiOff size={15} aria-hidden />,
+                title: "Hors connexion",
+                text: "Toutes les pages et illustrations sont précachées.",
+              },
+              {
+                icon: <HardDrive size={15} aria-hidden />,
+                title: "Données locales",
+                text: "La progression reste sur l'appareil, sans compte.",
+              },
+              {
+                icon: <RefreshCw size={15} aria-hidden />,
+                title: "Mises à jour",
+                text: "Une nouvelle version vous est proposée automatiquement.",
+              },
+            ].map((item) => (
+              <div key={item.title} className="rounded-xl border border-line px-3 py-2.5">
+                <p className="flex items-center gap-1.5 text-[11px] font-extrabold">
+                  <span className="text-brand">{item.icon}</span>
+                  {item.title}
+                </p>
+                <p className="mt-1 text-[11px] leading-relaxed text-muted">{item.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <section className="card p-5 sm:p-6">
         <div className="flex items-center justify-between">

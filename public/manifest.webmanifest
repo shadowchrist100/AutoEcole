@@ -1,16 +1,20 @@
 {
+  "id": "/",
   "name": "AutoÉcole — Code de la route",
   "short_name": "AutoÉcole",
-  "description": "919 questions corrigées du manuel béninois, quiz chronométrés, examens blancs, révisions espacées et suivi par module.",
+  "description": "919 questions corrigées du manuel béninois, quiz chronométrés, examens blancs, révisions espacées et suivi par module. Utilisable hors connexion après la première visite.",
   "lang": "fr",
   "dir": "ltr",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait-primary",
   "background_color": "#f4f6fa",
   "theme_color": "#0b1220",
   "categories": ["education", "productivity"],
+  "prefer_related_applications": false,
+  "launch_handler": { "client_mode": "navigate-existing" },
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -29,6 +33,29 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/home-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Parcours et progression"
+    },
+    {
+      "src": "/screenshots/session-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Session d'entraînement"
+    },
+    {
+      "src": "/screenshots/home-desktop.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Tableau de bord sur ordinateur"
     }
   ],
   "shortcuts": [

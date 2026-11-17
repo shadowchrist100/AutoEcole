@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
 import {
   ChartNoAxesColumn,
   ClipboardCheck,
+  Download,
   Dumbbell,
   Home,
   Repeat2,
@@ -13,10 +13,12 @@ import {
   Signpost,
   BookOpen,
   ArrowUpRight,
+  WifiOff,
 } from "lucide-react";
 import { useProgress } from "@/lib/progress";
 import { globalStats, readiness } from "@/lib/stats";
 import { Ring } from "@/components/ui";
+import { usePwa } from "@/components/Pwa";
 
 const MAIN_NAV = [
   { href: "/", label: "Parcours", icon: Home },
@@ -111,12 +113,7 @@ function SidebarProgress() {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-
-  useEffect(() => {
-    if (process.env.NODE_ENV !== "production") return;
-    if (!("serviceWorker" in navigator)) return;
-    navigator.serviceWorker.register("/sw.js").catch(() => undefined);
-  }, []);
+  const { canInstall, install, offline } = usePwa();
 
   return (
     <div className="min-h-dvh bg-canvas">
@@ -151,7 +148,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </nav>
         <div className="mt-6 space-y-3">
+          {offline ? (
+            <p className="flex items-center gap-2 rounded-2xl bg-white/6 px-3.5 py-2.5 text-[11px] font-bold text-white/70 ring-1 ring-white/10">
+              <WifiOff size={14} aria-hidden />
+              Hors ligne — cache actif
+            </p>
+          ) : null}
           <SidebarProgress />
+          {canInstall ? (
+            <button
+              type="button"
+              onClick={() => void install()}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-3.5 py-2.5 text-[12px] font-bold text-white transition hover:bg-white/10"
+            >
+              <Download size={15} aria-hidden />
+              Installer l'application
+            </button>
+          ) : null}
           <Link
             href="/examen"
             className="flex items-center justify-between rounded-2xl bg-yellow px-3.5 py-3 text-[12px] font-extrabold text-ink transition hover:bg-[#f0b92c]"
@@ -168,6 +181,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Logo dark />
           </Link>
           <div className="flex items-center gap-1">
+            {canInstall ? (
+              <button
+                type="button"
+                onClick={() => void install()}
+                className="grid h-10 w-10 place-items-center rounded-xl text-brand hover:bg-white"
+                aria-label="Installer l'application"
+              >
+                <Download size={20} aria-hidden />
+              </button>
+            ) : null}
             <Link
               href="/cours"
               className="grid h-10 w-10 place-items-center rounded-xl text-ink hover:bg-white"
@@ -184,6 +207,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
           </div>
         </header>
+
+        {offline ? (
+          <div className="flex items-center justify-center gap-2 bg-yellow-soft px-4 py-1.5 text-[11px] font-bold text-[#8a6207] lg:hidden">
+            <WifiOff size={12} aria-hidden />
+            Hors ligne — les pages déjà visitées restent disponibles
+          </div>
+        ) : null}
 
         <main className="shell-main">{children}</main>
       </div>
