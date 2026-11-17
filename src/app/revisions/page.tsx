@@ -284,7 +284,9 @@ export default function RevisionsPage() {
             <Timer size={18} aria-hidden />
           </span>
           <h3 className="mt-3 text-sm font-extrabold">Quiz chronométré</h3>
-          <p className="mt-1 text-xs text-muted">{state.settings.secondsPerQuestion} s par question, comme à l'examen.</p>
+          <p className="mt-1 text-xs text-muted">
+            {state.settings.secondsPerQuestion} s par question, réglable dans les réglages.
+          </p>
           <Link href="/session/?mode=quiz&count=20" className="btn-ghost mt-3 w-full">
             Lancer
             <ArrowRight size={14} aria-hidden />

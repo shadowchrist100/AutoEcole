@@ -223,10 +223,11 @@ export default function ReglagesPage() {
           </span>
         </div>
         <p className="mt-1 text-xs text-muted">
-          L'examen officiel laisse 5 secondes par question. Entraînez-vous en dessous pour prendre de la marge.
+          L'examen officiel laisse 5 secondes par question. Par défaut, l'application en laisse 25 pour
+          apprendre sans pression ; réduisez progressivement pour prendre de la marge.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
-          {[3, 4, 5, 6, 7, 8, 10].map((value) => (
+          {[5, 10, 15, 20, 25, 30].map((value) => (
             <button
               key={value}
               type="button"
@@ -244,18 +245,20 @@ export default function ReglagesPage() {
         </div>
         <div className="mt-3 flex items-center gap-2 text-[11px] text-muted">
           <Gauge size={13} aria-hidden />
-          {settings.secondsPerQuestion <= 4
-            ? "Rythme expert : vous anticipez les situations."
-            : settings.secondsPerQuestion === 5
-              ? "Rythme de l'examen."
-              : "Rythme confortable pour apprendre."}
-          {settings.secondsPerQuestion !== 5 ? (
+          {settings.secondsPerQuestion <= 5
+            ? "Rythme de l'examen officiel : vous anticipez les situations."
+            : settings.secondsPerQuestion < 25
+              ? "Rythme soutenu : vous gagnez en rapidité."
+              : settings.secondsPerQuestion === 25
+                ? "Rythme par défaut : le temps de lire et de réfléchir."
+                : "Rythme confortable pour découvrir les questions."}
+          {settings.secondsPerQuestion !== 25 ? (
             <button
               type="button"
-              onClick={() => updateSettings({ secondsPerQuestion: 5 })}
+              onClick={() => updateSettings({ secondsPerQuestion: 25 })}
               className="font-bold text-brand hover:underline"
             >
-              Revenir à 5 s
+              Revenir à 25 s
             </button>
           ) : null}
         </div>

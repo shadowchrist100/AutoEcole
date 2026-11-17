@@ -49,7 +49,7 @@ export type Settings = {
 };
 
 export const DEFAULT_SETTINGS: Settings = {
-  secondsPerQuestion: 5,
+  secondsPerQuestion: 25,
   defaultCount: 10,
   examCount: 40,
   examMaxErrors: 5,

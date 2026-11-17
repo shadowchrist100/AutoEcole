@@ -82,7 +82,7 @@ export default function DashboardPage() {
             </h2>
             <p className="mt-2 max-w-lg text-sm text-white/60">
               {stats.seen === 0
-                ? "Le chronomètre est de 5 secondes par question. Les révisions reviennent automatiquement au bon moment."
+                ? `Le chronomètre est de ${state.settings.secondsPerQuestion} secondes par question. Les révisions reviennent automatiquement au bon moment.`
                 : `${stats.seen} questions sur ${stats.total} déjà rencontrées, ${formatPercent(stats.accuracy)} de bonnes réponses.`}
             </p>
             <div className="mt-6 flex flex-wrap gap-2.5">

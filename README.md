@@ -14,7 +14,7 @@ d'abord.
   QCM (le chapitre I, sans QCM, est couvert par des fiches).
 - **233 illustrations** découpées automatiquement du PDF, en WebP compressé.
 - **Entraînement libre** : correction immédiate, questions non vues en priorité.
-- **Quiz chronométré** : 5 secondes par question par défaut, passage automatique
+- **Quiz chronométré** : 25 secondes par question par défaut, passage automatique
   à l'expiration du temps.
 - **Examen blanc configurable** : 20 à 40 questions, seuil de fautes réglable,
   tirage pondéré par module et correction uniquement à la fin.
