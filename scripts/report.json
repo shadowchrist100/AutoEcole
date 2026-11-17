@@ -1,0 +1,23 @@
+{
+  "source": "Guide sur le Code de la route .pdf",
+  "extractedAt": "2026-11-17T16:43:46.167766+00:00",
+  "pages": 178,
+  "questionCount": 919,
+  "perModule": {
+    "signalisation": 205,
+    "priorites": 154,
+    "manoeuvres": 45,
+    "autoroute": 93,
+    "infractions": 137,
+    "permis-a": 33,
+    "permis-b": 10,
+    "permis-c": 50,
+    "permis-d": 61,
+    "equipement": 131
+  },
+  "flags": {},
+  "images": {
+    "generated": 233,
+    "without_image": 686
+  }
+}

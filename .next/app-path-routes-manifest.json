@@ -1,0 +1,13 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/cours/page": "/cours",
+  "/entrainement/page": "/entrainement",
+  "/examen/page": "/examen",
+  "/module/page": "/module",
+  "/page": "/",
+  "/reglages/page": "/reglages",
+  "/revisions/page": "/revisions",
+  "/session/page": "/session",
+  "/statistiques/page": "/statistiques"
+}
