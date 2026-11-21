@@ -41,6 +41,7 @@ const MODE_TONE: Record<string, string> = {
   evaluation: "chip-brand",
   revision: "chip-good",
   errors: "chip-bad",
+  parcours: "chip-brand",
 };
 
 function SessionHistoryItem({ session, maxErrors }: { session: SessionRecord; maxErrors: number }) {
@@ -380,6 +381,7 @@ export default function StatistiquesPage() {
               <option value="evaluation">Évaluation</option>
               <option value="revision">Révisions</option>
               <option value="errors">Mes erreurs</option>
+              <option value="parcours">Parcours complet</option>
             </select>
           </div>
           {sessions.length === 0 ? (

@@ -8,6 +8,7 @@ import {
   BookOpen,
   Check,
   Clock3,
+  ListChecks,
   Play,
   Repeat2,
   Target,
@@ -159,6 +160,16 @@ function ModuleView() {
                 <span className="text-[11px] font-bold opacity-70">20 questions</span>
               </Link>
             </div>
+            <Link
+              href={`/parcours?module=${module.id}`}
+              className="btn-ghost mt-2.5 w-full justify-between border-dashed"
+            >
+              <span className="flex items-center gap-2">
+                <ListChecks size={16} aria-hidden />
+                Parcourir les {module.questionCount} questions du module
+              </span>
+              <span className="text-[11px] font-bold text-muted">dans l'ordre ou au hasard</span>
+            </Link>
             <div className="mt-5">
               <div className="mb-1.5 flex items-center justify-between text-[11px] font-semibold text-muted">
                 <span>Répartition des questions rencontrées</span>

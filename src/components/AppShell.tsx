@@ -8,6 +8,7 @@ import {
   Download,
   Dumbbell,
   Home,
+  ListChecks,
   Repeat2,
   Settings,
   Signpost,
@@ -27,6 +28,7 @@ const MAIN_NAV = [
 
 const TRAIN_NAV = [
   { href: "/entrainement", label: "Entraînement", icon: Dumbbell },
+  { href: "/parcours", label: "Parcours complet", icon: ListChecks },
   { href: "/examen", label: "Examen blanc", icon: ClipboardCheck },
   { href: "/revisions", label: "Révisions", icon: Repeat2 },
 ];

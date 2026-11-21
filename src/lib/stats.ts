@@ -7,7 +7,7 @@ import {
   type QuestionProgress,
 } from "@/lib/srs";
 
-export type SessionMode = "training" | "quiz" | "evaluation" | "revision" | "errors";
+export type SessionMode = "training" | "quiz" | "evaluation" | "revision" | "errors" | "parcours";
 
 export type SessionItem = {
   qid: string;
@@ -30,6 +30,18 @@ export type SessionRecord = {
 
 export type ProgressMap = Record<string, QuestionProgress>;
 
+/** Parcours complet mis en pause, pour reprendre exactement où l'on s'est arrêté. */
+export type SavedRun = {
+  /** Identifiant du module, ou undefined pour tout le document. */
+  moduleId?: string;
+  order: "ordered" | "random";
+  questionIds: string[];
+  index: number;
+  answers: SessionItem[];
+  startedAt: number;
+  updatedAt: number;
+};
+
 export type ProgressState = {
   version: 1;
   createdAt: number;
@@ -37,6 +49,7 @@ export type ProgressState = {
   sessions: SessionRecord[];
   streak: { current: number; best: number; lastDay: string | null };
   settings: Settings;
+  savedRun: SavedRun | null;
 };
 
 export type Settings = {
@@ -64,6 +77,7 @@ export const EMPTY_STATE: ProgressState = {
   sessions: [],
   streak: { current: 0, best: 0, lastDay: null },
   settings: DEFAULT_SETTINGS,
+  savedRun: null,
 };
 
 export type ScopeStats = {

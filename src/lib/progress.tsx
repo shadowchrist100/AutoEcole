@@ -5,6 +5,7 @@ import {
   DEFAULT_SETTINGS,
   EMPTY_STATE,
   type ProgressState,
+  type SavedRun,
   type SessionRecord,
   type Settings,
 } from "@/lib/stats";
@@ -17,6 +18,8 @@ type ProgressContextValue = {
   ready: boolean;
   lastSession: SessionRecord | null;
   completeSession: (record: SessionRecord) => void;
+  saveRun: (run: SavedRun) => void;
+  clearRun: () => void;
   updateSettings: (patch: Partial<Settings>) => void;
   reset: () => void;
   exportData: () => void;
@@ -24,6 +27,23 @@ type ProgressContextValue = {
 };
 
 const ProgressContext = createContext<ProgressContextValue | null>(null);
+
+function normalizeRun(raw: unknown): SavedRun | null {
+  if (!raw || typeof raw !== "object") return null;
+  const run = raw as Partial<SavedRun>;
+  if (!Array.isArray(run.questionIds) || !Array.isArray(run.answers)) return null;
+  const questionIds = run.questionIds.filter((id): id is string => typeof id === "string");
+  if (questionIds.length === 0) return null;
+  return {
+    moduleId: typeof run.moduleId === "string" ? run.moduleId : undefined,
+    order: run.order === "random" ? "random" : "ordered",
+    questionIds,
+    index: typeof run.index === "number" && run.index >= 0 ? run.index : 0,
+    answers: run.answers,
+    startedAt: typeof run.startedAt === "number" ? run.startedAt : Date.now(),
+    updatedAt: typeof run.updatedAt === "number" ? run.updatedAt : Date.now(),
+  };
+}
 
 function normalize(raw: unknown): ProgressState | null {
   if (!raw || typeof raw !== "object") return null;
@@ -36,6 +56,7 @@ function normalize(raw: unknown): ProgressState | null {
     sessions: value.sessions.slice(0, 60),
     streak: value.streak ?? { current: 0, best: 0, lastDay: null },
     settings: { ...DEFAULT_SETTINGS, ...(value.settings ?? {}) },
+    savedRun: normalizeRun(value.savedRun),
   };
 }
 
@@ -43,6 +64,8 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<ProgressState>(EMPTY_STATE);
   const [ready, setReady] = useState(false);
   const loaded = useRef(false);
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
   useEffect(() => {
     try {
@@ -98,6 +121,22 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const saveRun = useCallback((run: SavedRun) => {
+    const next = { ...stateRef.current, savedRun: run };
+    // Écriture immédiate : une mise en pause peut quitter la page dans la foulée.
+    stateRef.current = next;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // quota dépassé : l'état React reste la source de vérité.
+    }
+    setState(next);
+  }, []);
+
+  const clearRun = useCallback(() => {
+    setState((prev) => (prev.savedRun ? { ...prev, savedRun: null } : prev));
+  }, []);
+
   const updateSettings = useCallback((patch: Partial<Settings>) => {
     setState((prev) => ({ ...prev, settings: { ...prev.settings, ...patch } }));
   }, []);
@@ -134,12 +173,14 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
       ready,
       lastSession: state.sessions[0] ?? null,
       completeSession,
+      saveRun,
+      clearRun,
       updateSettings,
       reset,
       exportData,
       importData,
     }),
-    [state, ready, completeSession, updateSettings, reset, exportData, importData],
+    [state, ready, completeSession, saveRun, clearRun, updateSettings, reset, exportData, importData],
   );
 
   return <ProgressContext.Provider value={value}>{children}</ProgressContext.Provider>;

@@ -224,10 +224,11 @@ export default function ReglagesPage() {
         </div>
         <p className="mt-1 text-xs text-muted">
           L'examen officiel laisse 5 secondes par question. Par défaut, l'application en laisse 25 pour
-          apprendre sans pression ; réduisez progressivement pour prendre de la marge.
+          apprendre sans pression ; réduisez progressivement pour prendre de la marge. Vous pouvez aller
+          jusqu'à 1 minute pour découvrir les questions sans stress.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
-          {[5, 10, 15, 20, 25, 30].map((value) => (
+          {[5, 10, 15, 20, 25, 30, 45, 60].map((value) => (
             <button
               key={value}
               type="button"

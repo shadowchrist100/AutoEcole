@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Download,
   Flame,
+  Pause,
   Play,
   Repeat2,
   Sparkles,
@@ -26,6 +27,7 @@ const MODE_HREF: Record<string, string> = {
   evaluation: "/examen",
   revision: "/revisions",
   errors: "/revisions",
+  parcours: "/parcours",
 };
 
 export default function DashboardPage() {
@@ -37,6 +39,9 @@ export default function DashboardPage() {
   const series = dailySeries(state, 7);
   const maxSessions = Math.max(1, ...series.map((d) => d.sessions));
   const due = stats.due;
+  const savedRun = state.savedRun;
+  const savedTotal = savedRun?.questionIds.length ?? 0;
+  const savedAnswered = savedRun?.answers.length ?? 0;
 
   return (
     <div className="space-y-6">
@@ -125,6 +130,24 @@ export default function DashboardPage() {
           </div>
         </div>
       </section>
+
+      {savedRun ? (
+        <section className="flex flex-wrap items-center gap-3 rounded-2xl border border-brand/20 bg-brand-soft px-4 py-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand text-white">
+            <Pause size={18} aria-hidden />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-extrabold">Parcours complet en pause</p>
+            <p className="mt-0.5 text-xs text-ink/70">
+              {savedAnswered} / {savedTotal} questions répondues · reprenez exactement où vous vous êtes arrêté.
+            </p>
+          </div>
+          <Link href="/parcours" className="btn-brand">
+            <Play size={15} aria-hidden />
+            Reprendre
+          </Link>
+        </section>
+      ) : null}
 
       {canInstall ? (
         <section className="flex flex-wrap items-center gap-3 rounded-2xl border border-brand/20 bg-brand-soft px-4 py-3">

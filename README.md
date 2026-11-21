@@ -14,8 +14,12 @@ d'abord.
   QCM (le chapitre I, sans QCM, est couvert par des fiches).
 - **233 illustrations** découpées automatiquement du PDF, en WebP compressé.
 - **Entraînement libre** : correction immédiate, questions non vues en priorité.
-- **Quiz chronométré** : 25 secondes par question par défaut, passage automatique
-  à l'expiration du temps.
+- **Quiz chronométré** : de 5 secondes à 1 minute par question (25 par défaut),
+  passage automatique à l'expiration du temps.
+- **Parcours complet** : toutes les questions d'un module ou du manuel entier,
+  dans l'ordre ou au hasard, avec mise en pause et reprise exacte plus tard.
+- **Correction navigable** : à la fin d'une session, chaque question peut être
+  parcourue avec son libellé, ses propositions, la bonne réponse et le choix fait.
 - **Examen blanc configurable** : 20 à 40 questions, seuil de fautes réglable,
   tirage pondéré par module et correction uniquement à la fin.
 - **Révisions espacées** (boîtes de Leitner, intervalles 1, 2, 4, 7, 15 jours) :

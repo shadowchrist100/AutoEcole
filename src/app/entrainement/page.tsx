@@ -8,6 +8,7 @@ import {
   Clock3,
   Dumbbell,
   Info,
+  ListChecks,
   Play,
   Timer,
 } from "lucide-react";
@@ -238,6 +239,21 @@ export default function EntrainementPage() {
                 Révisions du jour
               </Link>
             </div>
+          </div>
+
+          <div className="card p-5">
+            <div className="flex items-center gap-2 text-brand">
+              <ListChecks size={17} aria-hidden />
+              <h2 className="text-sm font-extrabold">Tout parcourir</h2>
+            </div>
+            <p className="mt-1 text-xs text-muted">
+              Enchaînez toutes les questions d'un module ou du document entier, dans l'ordre ou au hasard.
+              Mettez en pause et reprenez quand vous voulez.
+            </p>
+            <Link href="/parcours" className="btn-soft mt-3 w-full">
+              Ouvrir le parcours complet
+              <ArrowRight size={15} aria-hidden />
+            </Link>
           </div>
 
           <div className="card p-5">

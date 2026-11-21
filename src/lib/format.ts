@@ -49,6 +49,8 @@ export function modeLabel(mode: SessionMode): string {
       return "Révisions";
     case "errors":
       return "Mes erreurs";
+    case "parcours":
+      return "Parcours complet";
   }
 }
 

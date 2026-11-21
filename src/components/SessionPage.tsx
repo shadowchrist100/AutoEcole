@@ -14,6 +14,7 @@ import {
   ImageOff,
   Keyboard,
   ListChecks,
+  Pause,
   Play,
   RotateCcw,
   Timer,
@@ -41,6 +42,8 @@ import {
 } from "@/lib/stats";
 import { useProgress } from "@/lib/progress";
 import { Ring } from "@/components/ui";
+import { QuestionFigure } from "@/components/QuestionFigure";
+import { SessionCorrection } from "@/components/SessionCorrection";
 import { formatDuration } from "@/lib/format";
 import { playFeedback } from "@/lib/sound";
 
@@ -53,6 +56,7 @@ const MODE_TITLE: Record<SessionMode, string> = {
   evaluation: "Évaluation",
   revision: "Révisions du jour",
   errors: "Mes erreurs",
+  parcours: "Parcours complet",
 };
 
 function trainingPool(state: ReturnType<typeof useProgress>["state"], moduleId: string | undefined, count: number) {
@@ -68,19 +72,32 @@ function trainingPool(state: ReturnType<typeof useProgress>["state"], moduleId: 
 }
 
 function parseMode(value: string | null): SessionMode {
-  if (value === "quiz" || value === "evaluation" || value === "revision" || value === "errors") return value;
+  if (
+    value === "quiz" ||
+    value === "evaluation" ||
+    value === "revision" ||
+    value === "errors" ||
+    value === "parcours"
+  ) {
+    return value;
+  }
   return "training";
 }
 
 export function SessionPage() {
   const params = useSearchParams();
-  const { state, ready, completeSession } = useProgress();
+  const { state, ready, completeSession, saveRun, clearRun } = useProgress();
   const mode = parseMode(params.get("mode"));
-  const moduleId = params.get("module") ?? undefined;
-  const moduleInfo = getModule(moduleId);
+  const moduleParam = params.get("module") ?? undefined;
   const requested = Number(params.get("count")) || 0;
   const ids = params.get("ids");
   const timedParam = params.get("timed") === "1";
+  const orderParam: "ordered" | "random" = params.get("order") === "random" ? "random" : "ordered";
+  const resumeParam = params.get("resume") === "1";
+  const savedRun = state.savedRun;
+  const resuming = mode === "parcours" && resumeParam && Boolean(savedRun);
+  const moduleId = resuming ? savedRun?.moduleId : moduleParam;
+  const moduleInfo = getModule(moduleId);
 
   const [phase, setPhase] = useState<Phase>("intro");
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -101,11 +118,14 @@ export function SessionPage() {
   const startedAtRef = useRef(0);
   const questionStartRef = useRef(0);
   const deadlineRef = useRef(0);
+  const resumeRef = useRef<{ answers: SessionItem[] } | null>(null);
   const submitRef = useRef<(keys: string[], timedOut?: boolean) => void>(() => undefined);
 
   const seconds = state.settings.secondsPerQuestion;
   const current = questions[index];
-  const buildKey = `${mode}|${moduleId ?? ""}|${requested}|${ids ?? ""}|${timedParam ? "1" : "0"}`;
+  const buildKey = `${mode}|${moduleParam ?? ""}|${requested}|${ids ?? ""}|${timedParam ? "1" : "0"}|${orderParam}|${
+    resumeParam ? "1" : "0"
+  }`;
 
   useEffect(() => {
     if (!ready || builtKeyRef.current === buildKey) return;
@@ -121,6 +141,7 @@ export function SessionPage() {
     submittedRef.current = false;
     finishedRef.current = false;
     lastAdvanceRef.current = 0;
+    resumeRef.current = null;
     let list: Question[] = [];
     let count = requested;
     if (ids) {
@@ -135,6 +156,21 @@ export function SessionPage() {
     } else if (mode === "errors") {
       count = requested || 20;
       list = errorQuestions(state, count);
+    } else if (mode === "parcours") {
+      const saved = resumeParam ? state.savedRun : null;
+      if (saved && saved.questionIds.length > 0) {
+        list = saved.questionIds
+          .map((id) => questionById.get(id))
+          .filter((q): q is Question => Boolean(q));
+        resumeRef.current = {
+          // Toutes les questions précédentes ont été répondues : on reprend à la première restante.
+          answers: saved.answers,
+        };
+      } else {
+        const pool = getQuestions(moduleId);
+        list = orderParam === "random" ? shuffle(pool) : pool;
+      }
+      count = list.length;
     } else if (mode === "training") {
       count = requested || state.settings.defaultCount;
       list = trainingPool(state, moduleId, count);
@@ -146,7 +182,34 @@ export function SessionPage() {
     setTimed(mode === "evaluation" || mode === "quiz" || timedParam);
     setRemaining(state.settings.secondsPerQuestion);
     setBuilt(true);
-  }, [buildKey, ready, ids, mode, moduleId, requested, state, timedParam]);
+  }, [
+    buildKey,
+    ready,
+    ids,
+    mode,
+    moduleId,
+    requested,
+    state,
+    timedParam,
+    orderParam,
+    resumeParam,
+  ]);
+
+  const persistRun = useCallback(
+    (nextIndex: number, items: SessionItem[], startedAt = startedAtRef.current) => {
+      if (mode !== "parcours" || questions.length === 0) return;
+      saveRun({
+        moduleId,
+        order: orderParam,
+        questionIds: questions.map((question) => question.id),
+        index: nextIndex,
+        answers: items,
+        startedAt: startedAt || Date.now(),
+        updatedAt: Date.now(),
+      });
+    },
+    [mode, moduleId, orderParam, questions, saveRun],
+  );
 
   const finish = useCallback(() => {
     if (finishedRef.current) return;
@@ -168,10 +231,11 @@ export function SessionPage() {
     if (mode === "evaluation") {
       record.passed = items.filter((item) => !item.correct).length <= state.settings.examMaxErrors;
     }
+    if (mode === "parcours") clearRun();
     if (items.length > 0) completeSession(record);
     setResult(record);
     setPhase("done");
-  }, [completeSession, mode, moduleId, seconds, state.settings.examMaxErrors, timed]);
+  }, [clearRun, completeSession, mode, moduleId, seconds, state.settings.examMaxErrors, timed]);
 
   const advance = useCallback(() => {
     const now = Date.now();
@@ -208,8 +272,9 @@ export function SessionPage() {
       givenRef.current = keys;
       setFeedback({ correct, timedOut, given: keys });
       if (state.settings.sound) playFeedback(correct);
+      persistRun(index, answersRef.current);
     },
-    [current, state.settings.sound],
+    [current, index, persistRun, state.settings.sound],
   );
 
   useEffect(() => {
@@ -240,21 +305,38 @@ export function SessionPage() {
   }, [feedback, phase, mode, state.settings.autoNext, advance]);
 
   const start = useCallback(() => {
+    const resume = mode === "parcours" ? resumeRef.current : null;
+    const answers = resume?.answers ?? [];
+    const startIndex = resume ? Math.min(answers.length, Math.max(0, questions.length - 1)) : 0;
+    const startedAt = Date.now();
     lastAdvanceRef.current = 0;
     setPhase("running");
-    setIndex(0);
+    setIndex(startIndex);
     setGiven([]);
+    givenRef.current = [];
     setFeedback(null);
     setResult(null);
-    answersRef.current = [];
-    givenRef.current = [];
+    answersRef.current = answers;
     submittedRef.current = false;
     finishedRef.current = false;
-    startedAtRef.current = Date.now();
+    startedAtRef.current = startedAt;
     questionStartRef.current = Date.now();
     deadlineRef.current = Date.now() + seconds * 1000;
     setRemaining(seconds);
-  }, [seconds]);
+    if (mode === "parcours") {
+      if (answers.length >= questions.length && questions.length > 0) {
+        // Le parcours avait été interrompu juste après la dernière réponse.
+        finish();
+        return;
+      }
+      persistRun(startIndex, answers, startedAt);
+    }
+  }, [finish, mode, persistRun, questions, seconds]);
+
+  const pause = useCallback(() => {
+    persistRun(index, answersRef.current);
+    window.location.href = "/parcours";
+  }, [index, persistRun]);
 
   const choose = useCallback(
     (key: string) => {
@@ -315,8 +397,15 @@ export function SessionPage() {
         return "Les questions dont la révision est due, puis vos points faibles. Correction immédiate.";
       case "errors":
         return "Les questions que vous avez le plus ratées, pour les transformer en points forts.";
+      case "parcours":
+        if (resuming) {
+          return "Vous reprenez votre parcours là où vous l'avez mis en pause. Chaque réponse est enregistrée pour pouvoir vous arrêter à tout moment.";
+        }
+        return `Toutes les questions ${moduleInfo ? `du module ${moduleInfo.short}` : "du document"} ${
+          orderParam === "random" ? "dans un ordre aléatoire" : "dans l'ordre du manuel"
+        }. Correction immédiate ; mettez en pause quand vous voulez et revenez plus tard.`;
     }
-  }, [mode, seconds, state.settings.examMaxErrors]);
+  }, [mode, moduleInfo, orderParam, resuming, seconds, state.settings.examMaxErrors]);
 
   if (!ready || !built) {
     return (
@@ -355,7 +444,10 @@ export function SessionPage() {
     const isEvaluation = mode === "evaluation";
     return (
       <div className="mx-auto max-w-2xl">
-        <Link href={moduleId ? `/module?id=${moduleId}` : "/"} className="btn-ghost mb-5">
+        <Link
+          href={mode === "parcours" ? "/parcours" : moduleId ? `/module?id=${moduleId}` : "/"}
+          className="btn-ghost mb-5"
+        >
           <ArrowLeft size={16} aria-hidden />
           Retour
         </Link>
@@ -407,10 +499,16 @@ export function SessionPage() {
                 <Keyboard size={16} className="text-brand" aria-hidden />
                 Touches A à E pour répondre, Entrée pour valider.
               </li>
+              {mode === "parcours" ? (
+                <li className="flex items-center gap-2">
+                  <Pause size={16} className="text-brand" aria-hidden />
+                  Pause possible à tout moment : votre progression est conservée sur cet appareil.
+                </li>
+              ) : null}
             </ul>
             <button type="button" onClick={start} className="btn-brand mt-5 w-full sm:w-auto">
               <Play size={17} aria-hidden />
-              Démarrer
+              {resuming ? "Reprendre" : "Démarrer"}
             </button>
           </div>
         </div>
@@ -425,7 +523,10 @@ export function SessionPage() {
         mode={mode}
         moduleId={moduleId}
         maxErrors={state.settings.examMaxErrors}
-        restart={() => window.location.reload()}
+        restart={() => {
+          if (mode === "parcours") window.location.href = "/parcours";
+          else window.location.reload();
+        }}
       />
     );
   }
@@ -452,14 +553,18 @@ export function SessionPage() {
         <button
           type="button"
           onClick={() => {
+            if (mode === "parcours") {
+              if (window.confirm("Mettre le parcours en pause et revenir plus tard ?")) pause();
+              return;
+            }
             if (window.confirm("Quitter la session ? Cette session ne sera pas enregistrée.")) {
               window.location.href = moduleId ? `/module?id=${moduleId}` : "/";
             }
           }}
           className="grid h-10 w-10 place-items-center rounded-xl border border-line bg-surface text-ink hover:bg-canvas"
-          aria-label="Quitter la session"
+          aria-label={mode === "parcours" ? "Mettre le parcours en pause" : "Quitter la session"}
         >
-          <X size={19} aria-hidden />
+          {mode === "parcours" ? <Pause size={18} aria-hidden /> : <X size={19} aria-hidden />}
         </button>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
@@ -467,6 +572,16 @@ export function SessionPage() {
               {moduleInfo ? moduleInfo.short : MODE_TITLE[mode]} · question {index + 1}/{questions.length}
             </p>
             <div className="flex items-center gap-2">
+              {mode === "parcours" ? (
+                <button
+                  type="button"
+                  onClick={pause}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1.5 text-[11px] font-bold text-ink transition hover:bg-canvas sm:px-3"
+                >
+                  <Pause size={12} aria-hidden />
+                  <span className="hidden sm:inline">Pause</span>
+                </button>
+              ) : null}
               {timed ? (
                 <Ring
                   value={(remaining / Math.max(1, seconds)) * 100}
@@ -512,15 +627,10 @@ export function SessionPage() {
         <h1 className="mt-2 text-balance text-xl font-extrabold leading-snug sm:text-2xl">{current.text}</h1>
 
         {current.image ? (
-          <div className="mt-4 flex justify-center rounded-2xl border border-line bg-white p-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={current.image}
-              alt={`Illustration de la question ${current.number}`}
-              className="max-h-64 w-auto max-w-full rounded-lg object-contain sm:max-h-72"
-              loading="eager"
-            />
-          </div>
+          <QuestionFigure
+            src={current.image}
+            alt={`Illustration de la question ${current.number}`}
+          />
         ) : current.imageOptions ? (
           <div className="mt-4 flex items-center gap-2 rounded-2xl bg-canvas p-3 text-xs text-muted">
             <ImageOff size={15} aria-hidden />
@@ -696,13 +806,13 @@ function SessionResults({
             </Ring>
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/45">
-                {mode === "evaluation" ? "Examen blanc" : "Session terminée"}
+                {mode === "evaluation" ? "Examen blanc" : mode === "parcours" ? "Parcours terminé" : "Session terminée"}
               </p>
               <h1 className="mt-1 text-2xl font-extrabold tracking-tight sm:text-3xl">
                 {passed === undefined
                   ? score.errors === 0
                     ? "Sans faute, excellent !"
-                    : `${score.correct} bonnes réponses sur ${score.total}`
+                    : `${score.correct} ${score.correct > 1 ? "bonnes réponses" : "bonne réponse"} sur ${score.total}`
                   : passed
                     ? "Examen réussi"
                     : "Il manque encore un peu"}
@@ -738,65 +848,17 @@ function SessionResults({
             <Play size={16} aria-hidden />
             Recommencer
           </button>
-          <Link href={moduleId ? `/module?id=${moduleId}` : "/"} className="btn-ghost">
+          <Link
+            href={mode === "parcours" ? "/parcours" : moduleId ? `/module?id=${moduleId}` : "/"}
+            className="btn-ghost"
+          >
             <Flag size={16} aria-hidden />
             Terminer
           </Link>
         </div>
       </div>
 
-      {wrong.length > 0 ? (
-        <section className="card p-5 sm:p-6">
-          <h2 className="text-lg font-extrabold tracking-tight">Revue des erreurs</h2>
-          <p className="mt-0.5 text-xs text-muted">
-            Relisez la bonne réponse : ces questions reviendront en révision espacée.
-          </p>
-          <ul className="mt-4 space-y-3">
-            {wrong.map((item) => {
-              const q = questionById.get(item.qid);
-              if (!q) return null;
-              return (
-                <li key={item.qid} className="rounded-2xl border border-line bg-canvas/50 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted">
-                      Question n° {q.number}
-                    </p>
-                    {item.timedOut ? <span className="chip-bad">Temps écoulé</span> : null}
-                  </div>
-                  <p className="mt-1 text-sm font-bold leading-snug">{q.text}</p>
-                  <div className="mt-2 space-y-1 text-xs">
-                    <p className="text-bad">
-                      Votre réponse :{" "}
-                      <strong>{item.given.length ? item.given.map((g) => g.toUpperCase()).join(", ") : "aucune"}</strong>
-                    </p>
-                    <p className="text-good">
-                      Bonne réponse : <strong>{answerLabel(q)}</strong>
-                    </p>
-                    {q.options.length > 0 ? (
-                      <p className="text-muted">
-                        {q.options
-                          .filter((o) => q.answers.includes(o.key))
-                          .map((o) => `${o.key.toUpperCase()}) ${o.text}`)
-                          .join(" · ")}
-                      </p>
-                    ) : null}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ) : (
-        <div className="card p-6 text-center">
-          <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-good-soft text-good">
-            <Trophy size={22} aria-hidden />
-          </div>
-          <h2 className="mt-3 text-lg font-extrabold">Aucune erreur sur cette session</h2>
-          <p className="mt-1 text-sm text-muted">
-            Continuez avec un autre module ou augmentez le nombre de questions pour rester affûté.
-          </p>
-        </div>
-      )}
+      <SessionCorrection record={record} />
     </div>
   );
 }
